@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python server.py)",
+      "Bash(taskkill /f /im python.exe)",
+      "Bash(netstat -ano)",
+      "Bash(findstr 8765)",
+      "Bash(taskkill /f /pid 24236)",
+      "Bash(taskkill /f /pid 24236 /t)",
+      "Bash(powershell -Command \"Stop-Process -Id 24236 -Force\")",
+      "Bash(pip show *)",
+      "Bash(python -c ' *)",
+      "Bash(taskkill /f /pid 19096)",
+      "Bash(taskkill /F /PID 19096)",
+      "Bash(powershell -Command \"Stop-Process -Id 19096 -Force\")",
+      "Bash(powershell -Command \"Stop-Process -Id 31808 -Force\")",
+      "Bash(powershell -Command \"Stop-Process -Id 24584 -Force\")",
+      "Bash(powershell -Command \"Stop-Process -Id 10824 -Force\")",
+      "Bash(powershell -Command \"Stop-Process -Id 5152 -Force\")",
+      "Bash(dir \"C:\\\\Nerd\\\\AI EXB\\\\models\")",
+      "Bash(pip install *)",
+      "Bash(pip index *)",
+      "Bash(python -c \"import torch; print\\(torch.__version__\\); print\\(torch.cuda.is_available\\(\\)\\)\")",
+      "Bash(python -c \"import torch; print\\('OK'\\)\")",
+      "Bash(pip list *)",
+      "Bash(findstr torch *)",
+      "Bash(python -c \"import torch; print\\(torch.__version__\\); print\\(torch.cuda.is_available\\(\\)\\); print\\(torch.cuda.get_device_name\\(0\\) if torch.cuda.is_available\\(\\) else 'No CUDA'\\)\")",
+      "Bash(python -c \"import torch; print\\('PyTorch:', torch.__version__, 'CUDA:', torch.cuda.is_available\\(\\)\\)\")",
+      "Bash(powershell.exe -Command ' *)"
+    ]
+  }
+}

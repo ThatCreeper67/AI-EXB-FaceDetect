@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101510">
+  <title>Face Recognition System</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, sans-serif;
+      background: #101510;
+      color: #eef5eb;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px 16px;
+      display: grid;
+      place-items: center;
+    }
+
+    main { width: min(100%, 1000px); }
+
+    h1 { margin: 0 0 4px; font-size: clamp(1.5rem, 5vw, 2rem); }
+
+    .hint, #status, #result { color: #b7c3b4; }
+
+    .video {
+      margin-top: 20px;
+      overflow: hidden;
+      border: 2px solid #354334;
+      border-radius: 14px;
+      background: #070a07;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4 / 3;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 9px;
+      padding: 11px 18px;
+      background: #8ed36c;
+      color: #10200b;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover:not(:disabled) { background: #a8e386; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    button.secondary {
+      background: #5a6f5a;
+      color: #eef5eb;
+    }
+    #status[data-state="connected"] { color: #8ed36c; font-weight: 600; }
+    #status[data-state="error"] { color: #ff9a8f; font-weight: 600; }
+
+    /* Section cards */
+    .section-card {
+      margin-top: 30px;
+      padding: 20px;
+      background: #1a201a;
+      border-radius: 12px;
+      border: 1px solid #354334;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #2a302a;
+    }
+
+    .section-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #8ed36c;
+    }
+
+    .section-count {
+      font-size: 0.85rem;
+      background: #2a302a;
+      padding: 4px 10px;
+      border-radius: 12px;
+      color: #b7c3b4;
+    }
+
+    /* Registered Faces Grid */
+    .registered-faces {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 15px;
+    }
+
+    .face-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: #121812;
+      border-radius: 10px;
+      border: 1px solid #2a302a;
+      transition: border-color 0.2s;
+    }
+
+    .face-item:hover {
+      border-color: #8ed36c;
+    }
+
+    .face-thumbnail {
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      background: #2a302a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: #888;
+      overflow: hidden;
+      border: 2px solid transparent;
+    }
+
+    .face-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .face-name {
+      font-size: 0.95rem;
+      color: #eef5eb;
+      text-align: center;
+      word-break: break-word;
+      font-weight: 500;
+    }
+
+    .face-name.unregistered {
+      color: #ff9a8f;
+      font-style: italic;
+    }
+
+    /* Detected Faces Grid */
+    .detected-faces-list {
+      margin-top: 20px;
+    }
+
+    .faces-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .face-card {
+      background: #121812;
+      border: 1px solid #2a302a;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.2s;
+    }
+
+    .face-card.registered {
+      border-color: #8ed36c;
+    }
+
+    .face-card.unregistered {
+      border-color: #ff9a8f;
+    }
+
+    .face-card-image {
+      width: 100%;
+      height: 140px;
+      background: #2a302a;
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .face-card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .face-tag {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: rgba(0,0,0,0.7);
+      color: #8ed36c;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    .face-card-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .face-card input[type="text"] {
+      flex: 1;
+      padding: 8px 10px;
+      background: #2a302a;
+      border: 1px solid #354334;
+      border-radius: 6px;
+      color: #eef5eb;
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+
+    .face-card input[type="text"]:focus {
+      outline: none;
+      border-color: #8ed36c;
+    }
+
+    button.register-btn {
+      padding: 8px 14px;
+      font-size: 0.85rem;
+    }
+
+    .refresh-faces {
+      margin-top: 15px;
+      padding: 8px 16px;
+      background: #5a6f5a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+
+    .refresh-faces:hover { background: #708a70; }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: #888;
+      padding: 30px;
+      font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+      .faces-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      }
+      .registered-faces {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      }
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 18px 12px; }
+      .video { margin-top: 16px; }
+      .section-card { padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Face Recognition System</h1>
+    <div class="hint">Live face detection and recognition from webcam</div>
+
+    <div class="video">
+      <canvas id="feed" width="640" height="480" aria-label="Live webcam feed"></canvas>
+    </div>
+
+    <div class="controls">
+      <button id="capture" type="button" disabled>Capture &amp; analyze</button>
+      <span id="status" role="status" aria-live="polite">Connecting to the stream…</span>
+    </div>
+    <p id="result" aria-live="polite">Waiting for the first camera frame.</p>
+
+    <!-- Detected Faces Section -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2>Detected Faces</h2>
+        <span id="detectedCount" class="section-count">0 faces</span>
+      </div>
+      <div class="detected-faces-list">
+        <div id="facesContainer" class="faces-grid">
+          <div class="empty-state">No faces detected yet. Click "Capture &amp; analyze" to scan.</div>
+        </div>
+      </div>
+      <button id="refreshFaces" class="refresh-faces">Refresh Detected Faces</button>
+    </div>
+
+    <!-- Registered Faces Section -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2>Registered Faces</h2>
+        <span id="registeredCount" class="section-count">0 people</span>
+      </div>
+      <div id="registeredFacesContainer" class="registered-faces">
+        <div class="face-item">
+          <div class="face-thumbnail">No faces registered yet</div>
+          <div class="face-name unregistered">Register a person to get started</div>
+        </div>
+      </div>
+      <button id="refreshRegistered" class="secondary">Refresh List</button>
+    </div>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("feed");
+    const context = canvas.getContext("2d");
+    const captureButton = document.getElementById("capture");
+    const status = document.getElementById("status");
+    const result = document.getElementById("result");
+    const refreshRegisteredBtn = document.getElementById("refreshRegistered");
+    const refreshFacesBtn = document.getElementById("refreshFaces");
+
+    const facesContainer = document.getElementById("facesContainer");
+    const registeredFacesContainer = document.getElementById("registeredFacesContainer");
+    const detectedCountSpan = document.getElementById("detectedCount");
+    const registeredCountSpan = document.getElementById("registeredCount");
+
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${location.hostname}:8765`;
+    let currentFrame = null;
+    let reconnectDelay = 1000;
+    const maxReconnectDelay = 10000;
+    let socket = null;
+    let registeredFaces = [];
+
+    // Face data cache
+    let faceDataCache = [];
+
+    function render() {
+      if (!currentFrame) return;
+      context.drawImage(currentFrame, 0, 0, canvas.width, canvas.height);
+    }
+
+    function connectWebSocket() {
+      socket = new WebSocket(wsUrl);
+      socket.binaryType = "blob";
+
+      socket.addEventListener("open", () => {
+        status.textContent = "Connected; waiting for camera frames…";
+        status.dataset.state = "connected";
+        reconnectDelay = 1000;
+        loadRegisteredFaces();
+      });
+
+      socket.addEventListener("message", async (event) => {
+        if (event.data instanceof Blob) {
+          const frame = await createImageBitmap(event.data);
+          if (currentFrame) currentFrame.close();
+          currentFrame = frame;
+          captureButton.disabled = false;
+          render();
+          return;
+        }
+
+        const message = JSON.parse(event.data);
+        if (message.type === "frame") {
+          faceDataCache = message.faces || [];
+        } else if (message.type === "capture") {
+          if (message.error) {
+            result.textContent = `Capture failed: ${message.error}`;
+          } else {
+            result.textContent =
+              `Capture complete: ${message.faces} face(s) analyzed.`;
+
+            detectedCountSpan.textContent = `${message.faces} face(s)`;
+            refreshDetectedFaces();
+          }
+        }
+      });
+
+      socket.addEventListener("close", () => {
+        status.textContent = "Stream disconnected. Reconnecting...";
+        status.dataset.state = "error";
+        captureButton.disabled = true;
+        scheduleReconnect();
+      });
+
+      socket.addEventListener("error", () => {
+        status.textContent = "Connection error. Retrying...";
+        status.dataset.state = "error";
+      });
+    }
+
+    function scheduleReconnect() {
+      status.textContent = `Stream disconnected. Reconnecting in ${reconnectDelay / 1000}s...`;
+      setTimeout(() => {
+        status.textContent = "Reconnecting...";
+        connectWebSocket();
+        reconnectDelay = Math.min(reconnectDelay * 2, maxReconnectDelay);
+      }, reconnectDelay);
+    }
+
+    captureButton.addEventListener("click", () => {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        result.textContent = "Analyzing the latest frame…";
+        socket.send("capture");
+      }
+    });
+
+    async function loadRegisteredFaces() {
+      try {
+        const response = await fetch('/api/get_registered_faces');
+        const data = await response.json();
+
+        if (data.success) {
+          registeredFaces = data.faces || [];
+          registeredCountSpan.textContent = `${registeredFaces.length} people`;
+          renderRegisteredFaces();
+        }
+      } catch (error) {
+        console.error("Error loading registered faces:", error);
+      }
+    }
+
+    function renderRegisteredFaces() {
+      if (registeredFaces.length === 0) {
+        registeredFacesContainer.innerHTML = `
+          <div class="face-item">
+            <div class="face-thumbnail">No faces registered yet</div>
+            <div class="face-name unregistered">Register a person to get started</div>
+          </div>
+        `;
+        return;
+      }
+
+      registeredFacesContainer.innerHTML = registeredFaces.map(name => `
+        <div class="face-item">
+          <div class="face-thumbnail">
+            <img src="/api/get_face_image?name=${encodeURIComponent(name)}"
+                 alt="${name}"
+                 onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><rect fill=%22%23333%22 width=%2280%22 height=%2280%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22>No Image</text></svg>'">
+          </div>
+          <div class="face-name">${name}</div>
+        </div>
+      `).join('');
+    }
+
+    async function refreshDetectedFaces() {
+      if (faceDataCache.length === 0) {
+        facesContainer.innerHTML = '<div class="empty-state">No faces detected yet. Click "Capture &amp; analyze" to scan.</div>';
+        return;
+      }
+
+      // Get current frame as image
+      const frameCanvas = document.createElement('canvas');
+      frameCanvas.width = canvas.width;
+      frameCanvas.height = canvas.height;
+      const frameContext = frameCanvas.getContext('2d');
+      frameContext.drawImage(currentFrame, 0, 0, frameCanvas.width, frameCanvas.height);
+
+      facesContainer.innerHTML = faceDataCache.map((face, index) => {
+        const x1 = face[0], y1 = face[1], x2 = face[2], y2 = face[3];
+        const width = x2 - x1;
+        const height = y2 - y1;
+
+        // Create a temporary canvas to extract face region
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        const tempContext = tempCanvas.getContext('2d');
+        tempContext.drawImage(
+          currentFrame,
+          x1, y1, width, height,
+          0, 0, width, height
+        );
+        const faceImageUrl = tempCanvas.toDataURL('image/jpeg');
+
+        // Determine if this face name is registered or unregistered
+        const faceName = face[4] || "TestUser"; // 5th element is confidence from server
+        const isRegistered = registeredFaces.includes(faceName);
+        const confidence = face[5] || 0; // 6th element is recognition confidence
+
+        return `
+          <div class="face-card ${isRegistered ? 'registered' : 'unregistered'}">
+            <div class="face-card-image">
+              <img src="${faceImageUrl}" alt="Face ${index + 1}">
+              <div class="face-tag">
+                ${isRegistered ? faceName : 'TestUser'}
+                ${confidence ? ` • ${Math.round(confidence * 100)}%` : ''}
+              </div>
+            </div>
+            <div class="face-card-controls">
+              <input type="text" id="faceName_${index}" placeholder="${isRegistered ? faceName : 'Enter name'}"
+                     value="${isRegistered ? faceName : ''}"
+                     ${isRegistered ? 'readonly' : ''}>
+              <button onclick="registerFace(${index})" class="register-btn">${isRegistered ? 'Registered' : 'Register'}</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function registerFace(faceIndex) {
+      const input = document.getElementById(`faceName_${faceIndex}`);
+      const name = input.value.trim();
+
+      if (!name) {
+        alert('Please enter a name for the face');
+        return;
+      }
+
+      try {
+        const face = faceDataCache[faceIndex];
+        const x1 = face[0], y1 = face[1], x2 = face[2], y2 = face[3];
+        const width = x2 - x1;
+        const height = y2 - y1;
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        const tempContext = tempCanvas.getContext('2d');
+        tempContext.drawImage(
+          currentFrame,
+          x1, y1, width, height,
+          0, 0, width, height
+        );
+        const faceImageUrl = tempCanvas.toDataURL('image/jpeg');
+
+        const response = await fetch('/api/register_face', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: name,
+            face_data: faceImageUrl
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          result.textContent = data.message;
+
+          // Refresh both lists
+          await loadRegisteredFaces();
+          await refreshDetectedFaces();
+
+          // Clear the input
+          input.value = '';
+        } else {
+          result.textContent = `Error: ${data.error}`;
+        }
+      } catch (error) {
+        result.textContent = `Error: ${error.message}`;
+        console.error('Error registering face:', error);
+      }
+    }
+
+    // Event listeners
+    refreshRegisteredBtn.addEventListener('click', loadRegisteredFaces);
+    refreshFacesBtn.addEventListener('click', refreshDetectedFaces);
+
+    // Initial connection
+    connectWebSocket();
+  </script>
+</body>
+</html>
